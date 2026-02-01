@@ -2,5 +2,3 @@
 [X] read
 [X] test 2
 [X] test3
-[X] test66
-[X] test100

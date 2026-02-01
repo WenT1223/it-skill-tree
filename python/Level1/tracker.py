@@ -20,12 +20,12 @@ def menu():
             if show_tasks() != "You have no tasks yet!\n":
                 mark_done()
             else:
-                print("\n"+show_tasks()+"------------------------------\n")
+                print("\nYou have no tasks yet!\n")
         elif option == "4":
             if show_tasks() != "You have no tasks yet!\n":
-                mark_done()
+                delete_task()
             else:
-                print("\n"+show_tasks()+"------------------------------\n")
+                print("\nNo tasks to delete.\n")
         elif option == "5":
             print("EXITTING\n--------------------------------")
             break
@@ -74,6 +74,26 @@ def mark_done():
             f.write(line)
             print(line, end="")
 
+
+def delete_task():
+    with open(TASKS_FILE, "r", encoding="utf-8") as f:
+        whole_text = f.readlines()
+        for index, task in enumerate(whole_text):
+            print(f"{index+1}. {task}", end="")
+        delete_line_num = input("Delete: ")
+        if delete_line_num.isdigit():
+            delete_line_num = int(delete_line_num) - 1
+        else:
+            print("Wrong input!\n")
+            return
+        if delete_line_num >= len(whole_text) or delete_line_num == -1:
+            print("Wrong index!\n")
+            return
+        whole_text.pop(delete_line_num)
+    with open(TASKS_FILE, "w", encoding="utf-8") as f:
+        for line in whole_text:
+            f.write(line)
+            print(line, end="")
 
 
 menu()
