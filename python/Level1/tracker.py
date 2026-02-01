@@ -1,7 +1,6 @@
 from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 TASKS_FILE = BASE_DIR / "tasks.txt"
-task_number = 0
 
 
 def menu():
@@ -30,26 +29,39 @@ def menu():
 
 
 def add_task():
-    global task_number
-    task_number += 1
     task = input("Task: ")
+    task_number = get_task_number() + 1
     with open(TASKS_FILE, "a") as f:
         f.write(f"{task_number}. [ ] {task}\n")
         return
+
+
+def get_task_number():
+    with open(TASKS_FILE, "r") as f:
+        x = f.readlines()
+    return len(list(enumerate(x)))
 
 
 def show_tasks():
     with open(TASKS_FILE, "r") as f:
         x = f.read()
         if x == "":
-            return "You have no tasks yet!\n"
+            no_tasks_yet = "You have no tasks yet!\n"
+            return no_tasks_yet
         else:
             return x
 
 
 def mark_done():
-    mark_done_line_num = int(input("Mark done: ")) - 1
-    whole_text = list()
+    mark_done_line_num = input("Mark done: ")
+    if mark_done_line_num.isdigit():
+        mark_done_line_num = int(mark_done_line_num) - 1
+    else:
+        print("Wrong input!\n")
+        return
+    if mark_done_line_num >= get_task_number() or mark_done_line_num == -1:
+        print("Wrong index!\n")
+        return
     with open(TASKS_FILE, "r") as f:
         whole_text = f.readlines()
         if "[X]" in whole_text[mark_done_line_num]:

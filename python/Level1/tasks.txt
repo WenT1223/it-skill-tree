@@ -1,2 +1,0 @@
-1. [X] reading
-2. [X] testing
