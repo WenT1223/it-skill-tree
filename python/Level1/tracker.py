@@ -9,7 +9,8 @@ def menu():
                        "1. Add task\n"
                        "2. Show tasks\n"
                        "3. Mark task as done\n"
-                       "4. Exit\n\n"
+                       "4. Delete task\n"
+                       "5. Exit\n\n"
                        "Choose: ")
         if option == "1":
             add_task()
@@ -17,11 +18,15 @@ def menu():
             print("\n"+show_tasks()+"------------------------------\n")
         elif option == "3":
             if show_tasks() != "You have no tasks yet!\n":
-                print("\n"+show_tasks())
                 mark_done()
             else:
                 print("\n"+show_tasks()+"------------------------------\n")
         elif option == "4":
+            if show_tasks() != "You have no tasks yet!\n":
+                mark_done()
+            else:
+                print("\n"+show_tasks()+"------------------------------\n")
+        elif option == "5":
             print("EXITTING\n--------------------------------")
             break
         else:
@@ -30,20 +35,13 @@ def menu():
 
 def add_task():
     task = input("Task: ")
-    task_number = get_task_number() + 1
-    with open(TASKS_FILE, "a") as f:
-        f.write(f"{task_number}. [ ] {task}\n")
+    with open(TASKS_FILE, "a", encoding="utf-8") as f:
+        f.write(f"[ ] {task}\n")
         return
 
 
-def get_task_number():
-    with open(TASKS_FILE, "r") as f:
-        x = f.readlines()
-    return len(list(enumerate(x)))
-
-
 def show_tasks():
-    with open(TASKS_FILE, "r") as f:
+    with open(TASKS_FILE, "r", encoding="utf-8") as f:
         x = f.read()
         if x == "":
             no_tasks_yet = "You have no tasks yet!\n"
@@ -53,26 +51,28 @@ def show_tasks():
 
 
 def mark_done():
-    mark_done_line_num = input("Mark done: ")
-    if mark_done_line_num.isdigit():
-        mark_done_line_num = int(mark_done_line_num) - 1
-    else:
-        print("Wrong input!\n")
-        return
-    if mark_done_line_num >= get_task_number() or mark_done_line_num == -1:
-        print("Wrong index!\n")
-        return
-    with open(TASKS_FILE, "r") as f:
+    with open(TASKS_FILE, "r", encoding="utf-8") as f:
         whole_text = f.readlines()
-        if "[X]" in whole_text[mark_done_line_num]:
+        for index, task in enumerate(whole_text):
+            print(f"{index+1}. {task}", end="")
+        mark_done_line_num = input("Mark done: ")
+        if mark_done_line_num.isdigit():
+            mark_done_line_num = int(mark_done_line_num) - 1
+        else:
+            print("Wrong input!\n")
+            return
+        if mark_done_line_num >= len(whole_text) or mark_done_line_num == -1:
+            print("Wrong index!\n")
+            return
+        if whole_text[mark_done_line_num].startswith("[X]"):
             print("\nTask already done\n")
             return
         else:
-            whole_text[mark_done_line_num] = whole_text[mark_done_line_num].replace("[ ]", "[X]")
-    with open(TASKS_FILE, "w") as f:
+            whole_text[mark_done_line_num] = whole_text[mark_done_line_num].replace("[ ]", "[X]", 1)
+    with open(TASKS_FILE, "w", encoding="utf-8") as f:
         for line in whole_text:
             f.write(line)
-    print(show_tasks())
+            print(line, end="")
 
 
 
