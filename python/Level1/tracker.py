@@ -1,11 +1,15 @@
 from pathlib import Path
+import json
 BASE_DIR = Path(__file__).resolve().parent
-TASKS_FILE = BASE_DIR / "tasks.txt"
+TASKS_FILE_TXT = BASE_DIR / "tasks.txt"
+TASKS_FILE_JSON = BASE_DIR / "tasks.json"
 
 
 def menu():
+    options = [add_task, print_tasks, mark_done, delete_task, toggle_task]
     while True:
-        option = input("WHAT TO DO\n"
+        tasks = load_tasks()
+        option_pick = input("WHAT TO DO\n"
                        "1. Add task\n"
                        "2. Show tasks\n"
                        "3. Mark task as done\n"
@@ -13,114 +17,134 @@ def menu():
                        "5. Toggle task done/undone\n"
                        "6. Exit\n\n"
                        "Choose: ")
-        if option == "1":
-            add_task()
-        elif option == "2":
-            x = read_tasks()
-            if x:
-                print(x)
-            else:
-                print("\nYou have no tasks!\n")
-        elif option == "3":
-            if read_tasks():
-                mark_done()
-            else:
-                print("\nYou have no tasks!\n")
-        elif option == "4":
-            if read_tasks():
-                delete_task()
-            else:
-                print("\nNo tasks to delete!\n")
-        elif option == "5":
-            if read_tasks():
-                toggle_task()
-            else:
-                print("\nNo tasks to delete!\n")
-        elif option == "6":
-            print("EXITTING\n--------------------------------")
+        if option_pick == "6":
             break
+        elif option_pick.isdigit() and 1 <= int(option_pick) <= len(options):
+            options[int(option_pick)-1](tasks)
         else:
             print("\nWrong input!\nCorrect form: 1 / 2 / 3 / 4 / 5 / 6\n")
 
 
-def read_tasks():
-    with open(TASKS_FILE, "r", encoding="utf-8") as f:
-        return f.read()
- 
+def tasks_txt_to_json():
+    with open(TASKS_FILE_TXT, "r", encoding="utf-8") as f:
+        tasks_list = f.readlines()
+    tasks = []
+    for line in tasks_list:
+        if line.startswith("[ ]"):
+            done = False
+            line = line.replace("[ ] ", "")
+        elif line.startswith("[X]"):
+            done = True
+            line = line.replace("[X] ", "")
+        else:
+            print("Txt file corrupted")
+            return
+        tasks.append({
+            "text": line.strip(),
+            "done": done
+        })
+    save_tasks(tasks)
+    old_file = BASE_DIR / "tasks_old.txt"
+    if old_file.exists():
+        old_file.unlink()
+    TASKS_FILE_TXT.rename(old_file)
+    print("Migration complete.")
+    
 
-def write_out_tasks():
-    with open(TASKS_FILE, "r", encoding="utf-8") as f:
-        whole_text = f.readlines()
-        for index, task in enumerate(whole_text):
-            print(f"{index+1}. {task}", end="")
-        return whole_text
+def load_tasks():
+    if not TASKS_FILE_JSON.exists():
+        return []
+    elif TASKS_FILE_JSON.stat().st_size == 0:
+        return []
+    else:
+        with open(TASKS_FILE_JSON, "r", encoding="utf-8") as f:
+            return json.load(f)
 
 
-def validate_input(the_input, whole_text_length):
+def save_tasks(tasks):
+    with open(TASKS_FILE_JSON, "w", encoding="utf-8") as f:
+        json.dump(tasks, f, indent=2)
+
+
+def add_task(tasks):
+    text = input("Task: ").strip()
+    if not text:
+        print("Task cannot be empty")
+        return
+    tasks.append({
+        "text": text,
+        "done": False
+    })
+    save_tasks(tasks)
+
+
+def print_tasks(tasks):
+    if not tasks:
+        print("No tasks")
+        return
+    for i, value in enumerate(tasks):
+        done = "[X]" if value["done"] else "[ ]"
+        print(f"{i+1}. {done} {value['text']}")
+
+
+def mark_done(tasks):
+    if not tasks:
+        print("No tasks")
+        return
+    print_tasks(tasks)
+    mark_line = input("Mark done: ")
+    index = validate_input(mark_line, len(tasks))
+    if index is None:
+        return
+    elif tasks[index]["done"]:
+        print("Task already done")
+        return
+    tasks[index]["done"] = True
+    save_tasks(tasks)
+    print_tasks(tasks)
+
+
+def toggle_task(tasks):
+    if not tasks:
+        print("No tasks")
+        return
+    print_tasks(tasks)
+    mark_line = input("Toggle done/undone: ")
+    index = validate_input(mark_line, len(tasks))
+    if index is None:
+        return
+    tasks[index]["done"] = not tasks[index]["done"]
+    save_tasks(tasks)
+    print_tasks(tasks)
+
+
+def validate_input(the_input, len_tasks):
     if the_input.isdigit():
         the_input = int(the_input) - 1
+        if not (0 <= the_input < len_tasks):
+            print("Wrong index!\n")
+            return None
+        return the_input
     else:
         print("Wrong input!\n")
         return None
-    if the_input >= whole_text_length or the_input == -1:
-        print("Wrong index!\n")
-        return None
-    return the_input
 
 
-def add_task():
-    task = input("Task: ")
-    with open(TASKS_FILE, "a", encoding="utf-8") as f:
-        f.write(f"[ ] {task}\n")
-
-
-def mark_done():
-    whole_text = write_out_tasks()
-    line_index = input("Mark done: ")
-    index = validate_input(line_index, len(whole_text))
-    if index == None:
+def delete_task(tasks):
+    if not tasks:
+        print("No tasks")
         return
-    if whole_text[index].startswith("[X]"):
-        print("\nTask already done\n")
+    print_tasks(tasks)
+    mark_line = input("Delete: ")
+    index = validate_input(mark_line, len(tasks))
+    if index is None:
         return
-    else:
-        whole_text[index] = whole_text[index].replace("[ ]", "[X]", 1)
-    with open(TASKS_FILE, "w", encoding="utf-8") as f:
-        for line in whole_text:
-            f.write(line)
-            print(line, end="")
+    tasks.pop(index)
+    save_tasks(tasks)
+    print_tasks(tasks)
 
 
-def delete_task():
-    whole_text = write_out_tasks()
-    line_index = input("Delete: ")
-    index = validate_input(line_index, len(whole_text))
-    if index == None:
-        return
-    whole_text.pop(index)
-    with open(TASKS_FILE, "w", encoding="utf-8") as f:
-        for line in whole_text:
-            f.write(line)
-            print(line, end="")
-
-
-def toggle_task():
-    whole_text = write_out_tasks()
-    line_index = input("Toggle: ")
-    index = validate_input(line_index, len(whole_text))
-    if index == None:
-        return
-    if whole_text[index].startswith("[X]"):
-        whole_text[index] = whole_text[index].replace("[X]", "[ ]", 1)
-    elif whole_text[index].startswith("[ ]"):
-        whole_text[index] = whole_text[index].replace("[ ]", "[X]", 1)
-    else:
-        print("Invalid format in file")
-        return
-    with open(TASKS_FILE, "w", encoding="utf-8") as f:
-        for line in whole_text:
-            f.write(line)
-            print(line, end="")
-
+if TASKS_FILE_TXT.exists() and (not TASKS_FILE_JSON.exists() or TASKS_FILE_JSON.stat().st_size == 0):
+    tasks_txt_to_json()
 
 menu()
